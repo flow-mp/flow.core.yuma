@@ -8,7 +8,7 @@ export namespace flow::core::yuma
 	struct by_ptr final
 	{
 		template<class... TArgs>
-		constexpr static auto invoke(TArgs&&... _args) // -> TRet
+		constexpr static auto invoke(TArgs&&... _args) -> TRet
 		{
 			auto tuple = std::make_tuple(transform(_args)...);
 			return _invoke(std::forward<decltype(tuple)>(tuple));
