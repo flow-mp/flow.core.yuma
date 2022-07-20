@@ -4,14 +4,20 @@ import flow.core.yuma.concepts;
 
 export namespace flow::core::yuma
 {
-	template <uintptr_t Addr, class TRet>
+	template <uintptr_t Addr, class TRet = void>
 	struct by_ptr final
 	{
 		template<class... TArgs>
-		constexpr static auto invoke(TArgs&&... _args) -> TRet
+		[[nodiscard]] constexpr static auto invoke(TArgs&&... _args) // -> TRet
 		{
-			auto tuple = std::make_tuple(transform(_args)...);
-			return _invoke(std::forward<decltype(tuple)>(tuple));
+			constexpr auto size = sizeof...(TArgs);
+
+			if constexpr (size > 0) {
+				constexpr auto tuple = std::make_tuple(transform(_args)...);
+				return _invoke(std::forward<decltype(tuple)>(tuple));
+			}
+
+			return _invoke();
 		}
 
 		template <class T>
@@ -27,11 +33,16 @@ export namespace flow::core::yuma
 		}
 
 	private:
+		[[nodiscard]] constexpr static auto _invoke(void) -> TRet
+		{
+			using type = auto(void)->TRet;
+			return std::invoke((type*)Addr);
+		}
+
 		template<class... T>
-		constexpr static auto _invoke(std::tuple<T...>&& _value) -> TRet
+		[[nodiscard]] constexpr static auto _invoke(std::tuple<T...>&& _value) -> TRet
 		{
 			using type = auto(T...)->TRet;
-
 			return std::apply((type*)Addr, _value);
 		}
 	};
