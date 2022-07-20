@@ -8,12 +8,10 @@ export namespace flow::core::yuma
 	struct by_ptr final
 	{
 		template<class... TArgs>
-		[[nodiscard]] constexpr static auto invoke(TArgs&&... _args) // -> TRet
+		[[nodiscard]] constexpr static auto invoke(TArgs&&... _args) -> TRet
 		{
-			constexpr auto size = sizeof...(TArgs);
-
-			if constexpr (size > 0) {
-				constexpr auto tuple = std::make_tuple(transform(_args)...);
+			if constexpr (sizeof...(TArgs) > 0) {
+				auto tuple = std::make_tuple(transform(_args)...);
 				return _invoke(std::forward<decltype(tuple)>(tuple));
 			}
 
@@ -21,15 +19,17 @@ export namespace flow::core::yuma
 		}
 
 		template <class T>
-		[[nodiscard]] constexpr static auto transform(T _value)
+		[[nodiscard]] constexpr static auto transform(T&& _value) noexcept
 		{
-			if constexpr (concepts::have_data<T>) {
+			using t = std::remove_cvref<T>;
+
+			if constexpr (concepts::have_data<t>) {
 				return reinterpret_cast<const char*>(std::data(_value));
-			} else if constexpr (std::is_arithmetic_v<T>) {
+			} else if constexpr (std::is_arithmetic_v<t>) {
 				return _value;
-			} else {
-				static_assert(true);
 			}
+
+			return _value;
 		}
 
 	private:
